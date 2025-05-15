@@ -2,9 +2,6 @@
 CREATE DATABASE fashion_shop;
 COMMENT ON DATABASE fashion_shop IS 'Database for an e-commerce fashion shop';
 
--- Connect to the database
-\c fashion_shop
-
 -- Create table roles
 CREATE TABLE roles (
     id BIGSERIAL PRIMARY KEY,
