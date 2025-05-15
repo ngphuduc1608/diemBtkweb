@@ -1,0 +1,654 @@
+-- Tạo cơ sở dữ liệu
+CREATE DATABASE fashion_shop;
+USE fashion_shop;
+
+-- Bảng addresses
+CREATE TABLE addresses (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    street NVARCHAR(255) NOT NULL,
+    district NVARCHAR(255) NOT NULL,
+    ward NVARCHAR(255) NOT NULL,
+    city NVARCHAR(255) NOT NULL,
+    full_address NVARCHAR(255),
+    latitude DOUBLE,
+    longitude DOUBLE
+);
+
+-- Bảng attributes
+CREATE TABLE attributes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng attributes_values
+CREATE TABLE attributes_values (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    value_name VARCHAR(255) NOT NULL,
+    value_img VARCHAR(255),
+    sort_order INT,
+    attribute_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON DELETE CASCADE
+);
+
+-- Bảng attribute_value_pattern
+CREATE TABLE attribute_value_pattern (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    pattern_name VARCHAR(255) NOT NULL,
+    pattern_type VARCHAR(255) NOT NULL,
+    is_active BIT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng pattern_attribute_value (Many-to-Many)
+CREATE TABLE pattern_attribute_value (
+    pattern_id BIGINT NOT NULL,
+    attribute_value_id BIGINT NOT NULL,
+    PRIMARY KEY (pattern_id, attribute_value_id),
+    FOREIGN KEY (pattern_id) REFERENCES attribute_value_pattern(id) ON DELETE CASCADE,
+    FOREIGN KEY (attribute_value_id) REFERENCES attributes_values(id) ON DELETE CASCADE
+);
+
+-- Bảng banners
+CREATE TABLE banners (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    logo_url VARCHAR(255),
+    media_url VARCHAR(255),
+    redirect_url VARCHAR(255),
+    is_active BIT NOT NULL,
+    activation_date DATETIME,
+    end_date DATETIME,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng banners_translations
+CREATE TABLE banners_translations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title NVARCHAR(255) NOT NULL,
+    subtitle NVARCHAR(255) NOT NULL,
+    banner_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    FOREIGN KEY (banner_id) REFERENCES banners(id) ON DELETE CASCADE,
+    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE RESTRICT
+);
+
+-- Bảng roles
+CREATE TABLE roles (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL
+);
+
+-- Bảng users
+CREATE TABLE users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    first_name NVARCHAR(100) NOT NULL,
+    last_name NVARCHAR(100) NOT NULL,
+    phone VARCHAR(15) UNIQUE,
+    date_of_birth DATETIME,
+    gender VARCHAR(20),
+    is_active BIT NOT NULL,
+    google_account_id VARCHAR(255) UNIQUE,
+    otp_request_time DATETIME,
+    one_time_password VARCHAR(10),
+    verify BIT,
+    role_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
+);
+
+-- Bảng languages
+CREATE TABLE languages (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    code VARCHAR(10) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng categories
+CREATE TABLE categories (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    image_url VARCHAR(255),
+    is_active BIT DEFAULT 1,
+    parent_id BIGINT,
+    version BIGINT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
+);
+
+-- Bảng categories_translations
+CREATE TABLE categories_translations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name NVARCHAR(255) NOT NULL,
+    category_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE RESTRICT
+);
+
+-- Bảng promotions
+CREATE TABLE promotions (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    discount_percentage DOUBLE NOT NULL,
+    descriptions NVARCHAR(255),
+    start_date DATETIME NOT NULL,
+    end_date DATETIME NOT NULL,
+    is_active BIT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng products
+CREATE TABLE products (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    status VARCHAR(255) NOT NULL,
+    base_price DOUBLE NOT NULL,
+    is_active BIT NOT NULL,
+    promotion_id BIGINT,
+    review_id BIGINT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE SET NULL,
+    FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE SET NULL
+);
+
+-- Bảng products_categories (Many-to-Many)
+CREATE TABLE products_categories (
+    product_id BIGINT NOT NULL,
+    category_id BIGINT NOT NULL,
+    PRIMARY KEY (product_id, category_id),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+-- Bảng products_translations
+CREATE TABLE products_translations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name NVARCHAR(255) NOT NULL,
+    description NVARCHAR(255),
+    material NVARCHAR(255),
+    care NVARCHAR(255),
+    product_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE RESTRICT
+);
+
+-- Bảng product_variants
+CREATE TABLE product_variants (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    sale_price DOUBLE NOT NULL,
+    color_value_id BIGINT,
+    size_value_id BIGINT,
+    product_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (color_value_id) REFERENCES attributes_values(id) ON DELETE SET NULL,
+    FOREIGN KEY (size_value_id) REFERENCES attributes_values(id) ON DELETE SET NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Bảng product_media
+CREATE TABLE product_media (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    media_url VARCHAR(255) NOT NULL,
+    media_type VARCHAR(255) NOT NULL,
+    sort_order INT,
+    model_height INT,
+    color_value_id BIGINT,
+    product_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (color_value_id) REFERENCES attributes_values(id) ON DELETE SET NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Bảng media_variants (Many-to-Many)
+CREATE TABLE media_variants (
+    product_media_id BIGINT NOT NULL,
+    product_variant_id BIGINT NOT NULL,
+    PRIMARY KEY (product_media_id, product_variant_id),
+    FOREIGN KEY (product_media_id) REFERENCES product_media(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE CASCADE
+);
+
+-- Bảng reviews
+CREATE TABLE reviews (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title NVARCHAR(255),
+    comment NVARCHAR(255),
+    purchased_size NVARCHAR(255),
+    fit NVARCHAR(255),
+    nickname NVARCHAR(255),
+    gender NVARCHAR(255),
+    age_group NVARCHAR(255),
+    height NVARCHAR(255),
+    weight NVARCHAR(255),
+    shoe_size NVARCHAR(255),
+    location NVARCHAR(255),
+    review_rate NVARCHAR(255),
+    product_id BIGINT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+);
+
+-- Bảng coupons
+CREATE TABLE coupons (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    discount_type VARCHAR(255) NOT NULL,
+    discount_value FLOAT NOT NULL,
+    min_order_value FLOAT NOT NULL,
+    expiration_date DATETIME NOT NULL,
+    is_active BIT DEFAULT 1,
+    code VARCHAR(255) NOT NULL,
+    image_url VARCHAR(255),
+    is_global BIT DEFAULT 0,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng coupon_translations
+CREATE TABLE coupon_translations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name NVARCHAR(255) NOT NULL,
+    description NVARCHAR(255),
+    coupon_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE,
+    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE RESTRICT
+);
+
+-- Bảng coupon_user_restriction
+CREATE TABLE coupon_user_restriction (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    coupon_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE
+);
+
+-- Bảng user_coupon_usage
+CREATE TABLE user_coupon_usage (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    coupon_id BIGINT NOT NULL,
+    used BIT NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    UNIQUE (user_id, coupon_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE CASCADE
+);
+
+-- Bảng coupon_config
+CREATE TABLE coupon_config (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    type VARCHAR(255),
+    discount_type VARCHAR(255),
+    discount_value FLOAT,
+    min_order_value FLOAT,
+    expiration_days INT,
+    image_url VARCHAR(255)
+);
+
+-- Bảng currencies
+CREATE TABLE currencies (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    code VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL,
+    symbol NVARCHAR(10),
+    rate_to_base DOUBLE,
+    is_base BIT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng holidays
+CREATE TABLE holidays (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    holiday_name NVARCHAR(255) NOT NULL,
+    date DATE,
+    is_fixed BIT,
+    description NVARCHAR(255) NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng holiday_coupon_translation
+CREATE TABLE holiday_coupon_translation (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    coupon_type VARCHAR(255) NOT NULL,
+    name NVARCHAR(255) NOT NULL,
+    description NVARCHAR(300) NOT NULL,
+    language_code VARCHAR(10) NOT NULL
+);
+
+-- Bảng stores
+CREATE TABLE stores (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    address_id BIGINT NOT NULL,
+    name VARCHAR(255),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(255),
+    is_active BIT,
+    open_hour DATETIME,
+    close_hour DATETIME,
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE RESTRICT
+);
+
+-- Bảng warehouses
+CREATE TABLE warehouses (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    address_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    phone VARCHAR(15),
+    is_active BIT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE RESTRICT
+);
+
+-- Bảng inventories
+CREATE TABLE inventories (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    product_variant_id BIGINT NOT NULL,
+    warehouse_id BIGINT,
+    store_id BIGINT,
+    quantity_in_stock INT NOT NULL,
+    delta_quantity INT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE CASCADE,
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE SET NULL,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+);
+
+-- Bảng inventory_transfers
+CREATE TABLE inventory_transfers (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    warehouse_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    status VARCHAR(50),
+    message VARCHAR(255),
+    is_return BIT DEFAULT 0,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE RESTRICT
+);
+
+-- Bảng inventory_transfers_items
+CREATE TABLE inventory_transfers_items (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    transfer_id BIGINT NOT NULL,
+    product_variant_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (transfer_id) REFERENCES inventory_transfers(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE CASCADE
+);
+
+-- Bảng order_status
+CREATE TABLE order_status (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    status_name VARCHAR(255) NOT NULL UNIQUE,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT
+);
+
+-- Bảng orders
+CREATE TABLE orders (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT,
+    coupon_id BIGINT,
+    total_price DOUBLE NOT NULL,
+    total_amount DOUBLE NOT NULL,
+    status_id BIGINT NOT NULL,
+    shipping_address NVARCHAR(255) NOT NULL,
+    shipping_method_id BIGINT,
+    shipping_fee DOUBLE,
+    tax_amount DOUBLE,
+    transaction_id VARCHAR(255),
+    store_id BIGINT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL,
+    FOREIGN KEY (status_id) REFERENCES order_status(id) ON DELETE RESTRICT,
+    FOREIGN KEY (shipping_method_id) REFERENCES shipping_method(id) ON DELETE SET NULL,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+);
+
+-- Bảng orders_details
+CREATE TABLE orders_details (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_id BIGINT NOT NULL,
+    product_variant_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DOUBLE NOT NULL,
+    total_price DOUBLE NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE RESTRICT
+);
+
+-- Bảng payment_method
+CREATE TABLE payment_method (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    method_name NVARCHAR(255) NOT NULL
+);
+
+-- Bảng payment
+CREATE TABLE payment (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_id BIGINT NOT NULL,
+    payment_method_id BIGINT NOT NULL,
+    payment_date DATE NOT NULL,
+    amount DOUBLE NOT NULL,
+    status NVARCHAR(255) NOT NULL,
+    transaction_code VARCHAR(255) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (payment_method_id) REFERENCES payment_method(id) ON DELETE RESTRICT
+);
+
+-- Bảng shipping_method
+CREATE TABLE shipping_method (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    method_name NVARCHAR(255) NOT NULL,
+    description NVARCHAR(255) NOT NULL
+);
+
+-- Bảng cart
+CREATE TABLE cart (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    session_id VARCHAR(255) UNIQUE,
+    user_id BIGINT UNIQUE,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bảng cart_item
+CREATE TABLE cart_item (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    product_variant_id BIGINT,
+    cart_id BIGINT,
+    quantity INT,
+    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE SET NULL,
+    FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE
+);
+
+-- Bảng wishlist
+CREATE TABLE wishlist (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bảng wishlist_item
+CREATE TABLE wishlist_item (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    product_variant_id BIGINT,
+    wishlist_id BIGINT,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (product_variant_id) REFERENCES product_variants(id) ON DELETE SET NULL,
+    FOREIGN KEY (wishlist_id) REFERENCES wishlist(id) ON DELETE CASCADE
+);
+
+-- Bảng notification
+CREATE TABLE notification (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT,
+    type VARCHAR(255) NOT NULL,
+    is_read BIT NOT NULL DEFAULT 0,
+    redirect_url VARCHAR(255),
+    image_url VARCHAR(255),
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Bảng notification_translations
+CREATE TABLE notification_translations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title NVARCHAR(255) NOT NULL,
+    message NVARCHAR(255) NOT NULL,
+    notification_id BIGINT NOT NULL,
+    language_id BIGINT NOT NULL,
+    FOREIGN KEY (notification_id) REFERENCES notification(id) ON DELETE CASCADE,
+    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE RESTRICT
+);
+
+-- Bảng secure_token
+CREATE TABLE secure_token (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    token VARCHAR(255) UNIQUE,
+    timestamp TIMESTAMP,
+    expired_at DATETIME,
+    user_id BIGINT NOT NULL,
+    is_expired BIT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bảng tokens
+CREATE TABLE tokens (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    token VARCHAR(255),
+    refresh_token VARCHAR(255),
+    token_type VARCHAR(50),
+    expiration_date DATETIME,
+    refresh_expiration_date DATETIME,
+    is_mobile BIT,
+    revoked BIT,
+    expired BIT,
+    user_id BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Bảng staff
+CREATE TABLE staff (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    created_at DATETIME,
+    updated_at DATETIME,
+    created_by BIGINT,
+    updated_by BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+);
+
+-- Bảng user_address
+CREATE TABLE user_address (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    address_id BIGINT NOT NULL,
+    is_default BIT,
+    first_name NVARCHAR(255),
+    last_name NVARCHAR(255),
+    phone VARCHAR(20),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE CASCADE
+);
